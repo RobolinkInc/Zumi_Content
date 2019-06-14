@@ -3,7 +3,6 @@ import os
 import numpy as np
 import time
 import pickle
-
 from PIL import Image
 
 class Recognition():
@@ -15,7 +14,7 @@ class Recognition():
         self.streaming = True
         self.streaming_image = None
         self.cap = 0
-        self.data_path = '/home/pi/Zumi_Contents/Datas/Face_recognition/'
+        self.data_path = '/home/pi/Zumi_Contents/Datas/face_recognition/'
 
     def makeLabel(self):
         labels = 0
@@ -152,3 +151,4 @@ class Recognition():
             os.remove(imagePath)
         os.remove(self.data_path + 'labels.pickle')
         os.remove(self.data_path + 'trainer/trainer.yml')
+        

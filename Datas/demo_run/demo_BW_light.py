@@ -3,9 +3,9 @@ from zumi.util.camera import Camera
 from zumi.util.knn_classifier import ColorClassifier
 from threading import Thread
 
+
 is_white = False
 zumi = Zumi()
-
 
 def continue_straight():
     global is_white
@@ -15,18 +15,16 @@ def continue_straight():
         zumi.go_straight(5, 0)
     zumi.stop(0)
 
-    
 def run():
     global is_white
     global zumi
 
-    camera = Camera()
-    knn = ColorClassifier(path='/home/pi/Zumi_Contents/Datas')      
-    knn.load_model("black_light_white_light")
-    
-    camera.start_camera()
- 
     try:
+        camera = Camera()
+        knn = ColorClassifier(path='/home/pi/Zumi_Contents/Datas')      
+        knn.load_model("black_light_white_light")
+        camera.start_camera()
+ 
         while True:
             if input("Press Enter to read a card, or type q first to exit. ") == "q":
                 break

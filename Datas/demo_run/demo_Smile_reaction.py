@@ -7,15 +7,14 @@ import time
 
 
 def run():
-    zumi = Zumi()
-    camera = Camera()
-    screen = Screen()
-    personality = Personality(zumi, screen)
-    faceDetector = FaceDetector() 
-
-    camera.start_camera()
-
     try:    
+        zumi = Zumi()
+        camera = Camera()
+        screen = Screen()
+        personality = Personality(zumi, screen)
+        faceDetector = FaceDetector() 
+        camera.start_camera()
+
         while True:
             image = camera.capture()
             face = faceDetector.detect_face(image)
@@ -29,5 +28,6 @@ def run():
             else:
                 screen.close_eyes()
     finally:
-        camera.close()
         screen.draw_text("")
+        camera.close()
+        
