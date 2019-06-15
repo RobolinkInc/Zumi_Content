@@ -1,6 +1,8 @@
+import sys
+sys.path.insert(0,'/home/pi/Zumi_Contents/Datas/knn-classifier')
 from zumi.zumi import Zumi
 from zumi.util.camera import Camera
-from zumi.util.knn_classifier import ColorClassifier
+from knn_classifier import ColorClassifier
 from threading import Thread
 
 
