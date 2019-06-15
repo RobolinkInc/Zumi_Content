@@ -14,7 +14,7 @@ class Recognition():
         self.streaming = True
         self.streaming_image = None
         self.cap = 0
-        self.data_path = '/home/pi/Zumi_Contents/Datas/face_recognition/'
+        self.data_path = '/home/pi/Zumi_Contents/Datas/face-recognition/'
 
     def makeLabel(self):
         labels = 0
