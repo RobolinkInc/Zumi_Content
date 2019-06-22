@@ -7,14 +7,14 @@ import time
 from sklearn.utils import shuffle
 from sklearn.neighbors import KNeighborsClassifier
 
-absPATH = '/home/pi/Datas'
+absPATH = '/home/pi/Zumi_Contents/Datas'
 DEMO = 'knn-classifier'
 
 
 class ColorClassifier():
     upper_hsv = [220, 255, 255]
 
-    def __init__(self, demo_name="", path=absPATH):
+    def __init__(self, demo_name="", is_balanced_data=True, path=absPATH):
         self.knn = KNeighborsClassifier()
         self.demo_name = demo_name
         self.label_names = []
@@ -29,13 +29,18 @@ class ColorClassifier():
         self.divided_features = []
         self.data_file_name = self.demo_name + "_KNN_data"
         self.current_image = ''
-        self.current_hsv_value = ''
+        self.current_feature_value = ''
         self.current_label = ''
         self.reactions = []
         self.predicts = None
         self.label_cnt = -1
+        self.collect_num = 10
         self.absPATH = path
+        self.is_balanced_data=is_balanced_data
         self.__create_base_folders()
+
+        if demo_name !="":
+            self.load_model(demo_name)
 
     def load_model(self, name):
         self.demo_name = name
@@ -74,11 +79,19 @@ class ColorClassifier():
                     break
 
             for i in range(self.label_num):
-                self.label_names.append(input("Label name (" + str(i + 1) + "/" + str(self.label_num) + ") : "))
+                label = input("Label name (" + str(i + 1) + "/" + str(self.label_num) + ") : ")
+                while self.is_in_labels(label, False):
+                    print("There is same label, try again with other one.")
+                    label = input("Label name (" + str(i + 1) + "/" + str(self.label_num) + ") : ")
+                self.label_names.append(label)
+
                 key = 'n'
                 while key == 'n':
                     key = input(
                         "Keyboard command for label (" + str(i + 1) + "/" + str(self.label_num) + ") : ")
+                    if self.is_in_labels(key, False):
+                        key = 'n'
+                        print("There is same keyboard command, try again with other one.")
                 self.label_keys.append(key)
 
             return True
@@ -91,6 +104,7 @@ class ColorClassifier():
         with open(file_path) as f:
             for line in f.readlines():
                 line = line.split(' ')
+
                 if line[0] == "Labels":
                     for cursor in line[2:-1]:
                         self.label_names.append(cursor)
@@ -111,9 +125,14 @@ class ColorClassifier():
                     self.labels.append(current_label)
                     self.features.append(feature)
 
-    def check_enough_datas(self):
+    def check_enough_datas(self, balance=""):
+        if balance == "":
+            balance = self.is_balanced_data
+
+        prev_num=0
         print('\nYou took .......')
         for label in self.data_cnt.keys():
+            prev_num = self.data_cnt[label]
             print(label + ':' + str(self.data_cnt[label]))
         print('datas ..........\n')
 
@@ -122,9 +141,13 @@ class ColorClassifier():
             return False
 
         for num in self.data_cnt.values():
-            if num < 10:
+            if balance and (num > prev_num+self.collect_num or num < prev_num - self.collect_num):
+                print('You should took same amount of the each labels. Try again')
+                return False
+            if num < 50:
                 print('There is not enough data. Try again')
                 return False
+
         return True
 
     def add_data(self, label, feature):
@@ -139,13 +162,6 @@ class ColorClassifier():
         if not isinstance(feature, list):
             feature = self.get_hsv_data(feature)
 
-            if feature[0] < 40:
-                temp = [180 + feature[0], feature[1], feature[2]]
-                self.features.append(temp)
-            elif feature[0] > 180:
-                temp = [0 + feature[0], feature[1], feature[2]]
-                self.features.append(temp)
-
         self.labels.append(label)
         self.features.append(feature)
         if label in self.data_cnt.keys():
@@ -153,7 +169,21 @@ class ColorClassifier():
         else:
             self.data_cnt[label] = 1
 
-    def add_datas(self, camera, save_image =False):
+    def add_out_boundary_datas(self):
+        for i in range (len(self.features)):
+            feature = self.features[i]
+            label = self.labels[i]
+            if feature[0] < 40:
+                temp = [180 + feature[0], feature[1], feature[2]]
+                self.labels.append(label)
+                self.features.append(temp)
+            elif feature[0] > 180:
+                temp = [0 + feature[0], feature[1], feature[2]]
+                self.labels.append(label)
+                self.features.append(temp)
+
+    def add_datas(self, camera, cnt=10, save_image=False):
+        self.collect_num = cnt
         while True:
             label = input("Please enter the keyboard command for the label")
 
@@ -163,20 +193,41 @@ class ColorClassifier():
                 if label in self.label_names:
                     label = self.label_keys[self.label_names.index(label)]
 
-                for i in range(10):
+                length = len(self.labels)
+                for i in range(cnt):
                     image = camera.capture()
+                    print("[",i,"]")
                     self.add_data(label, image)
                     if save_image:
                         self.save_image(label, image)
                     time.sleep(0.1)
+                if input("If there is the data that you wanna delete, press 'y'")=='y':
+                    delete_list = []
+                    while True:
+                        try:
+                            num = int(input("Type the number in [ ], type -1 for quit :"))
 
-        if not self.check_enough_datas():
-            return self.add_datas(camera)
+                            if num not in delete_list and num>=0 and num<cnt:
+                                delete_list.append(num)
+                            if num == -1 or len(delete_list) == cnt:
+                                break
+                        except ValueError:
+                            print("Oops! Input was not an integer.")
+
+                    delete_list.sort(reverse=True)
+
+                    for idx in delete_list:
+                        self.data_cnt[self.labels[length+idx]] -= 1
+                        del self.labels[length+idx]
+                        del self.features[length+idx]
+                    print(self.features)
+
+        self.add_out_boundary_datas()
 
     def save_image(self):
         if len(self.current_image)!=0:
             file_name = os.path.join(self.absPATH, DEMO, self.demo_name, "images", str(self.current_label + "_" + str(
-                self.label_cnt) + "" + '_'.join(map(str, self.current_hsv_value)) + ".jpg"))
+                self.label_cnt) + "" + '_'.join(map(str, self.current_feature_value)) + ".jpg"))
             cv2.imwrite(file_name, self.current_image)
 
     def save_data_set(self):
@@ -222,10 +273,10 @@ class ColorClassifier():
         mean_v = int(np.mean(v))
 
         print(mean_h, mean_s, mean_v)
-        self.current_hsv_value = [mean_h, mean_s, mean_v]
+        self.current_feature_value = [mean_h, mean_s, mean_v]
         self.current_image = rgb
 
-        return self.current_hsv_value
+        return self.current_feature_value
 
     def get_accuracy(self):
         x, y = shuffle(self.features, self.labels, random_state=0)
@@ -255,16 +306,23 @@ class ColorClassifier():
 
         return accuracy
 
-    def predict(self, features):
-        if not isinstance(features, list):
-            features = self.get_hsv_data(features)
+    def predict(self, pred_features, values='hsv'):
+        features = self.__select_hsv_value(values, self.features)
+        if not isinstance(pred_features, list):
+            hsv_list = self.get_hsv_data(pred_features)
+            pred_features = []
+            if values.find('h') != -1:
+                pred_features.append(hsv_list[0])
+            if values.find('s') != -1:
+                pred_features.append(hsv_list[1])
+            if values.find('v') != -1:
+                pred_features.append(hsv_list[2])
 
         pred_list = []
-        pred_list.append(features)
+        pred_list.append(pred_features)
 
-        self.knn.fit(self.features, self.labels)
+        self.knn.fit(features, self.labels)
         self.predicts = self.knn.predict(pred_list)
-
         return self.predicts
 
     def divide_data(self):
@@ -332,11 +390,36 @@ class ColorClassifier():
         self.labels = sorted_labels
         self.features = sorted_features
 
-    def is_in_labels(self, label):
+    def is_in_labels(self, label,is_print=True):
         if label in self.label_names or label in self.label_keys:
             return True
-        print("There's no " + label + " label.")
+        if is_print:
+            print("There's no " + label + " label.")
         return False
+
+    def __select_hsv_value(self, values, list):
+        num = len(values)
+        if num == 3:
+            return list
+        list = np.array(list)
+
+        y = len(list)
+        h = list[0:y+1, 0:1]
+        s = list[0:y+1, 1:2]
+        v = list[0:y+1, 2:3]
+
+        hsv_list=[]
+        if values.find('h') != -1:
+            hsv_list.append(h)
+        if values.find('s') != -1:
+            hsv_list.append(s)
+        if values.find('v') != -1:
+            hsv_list.append(v)
+
+        if num == 1:
+            return hsv_list[0].tolist()
+        else:
+            return np.hstack((hsv_list[0], hsv_list[1])).tolist()
 
     def __create_folders(self):
         try:
