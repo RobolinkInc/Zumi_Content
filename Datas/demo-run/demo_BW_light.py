@@ -24,14 +24,14 @@ def run():
     try:
         camera = Camera()
         knn = ColorClassifier(path='/home/pi/Zumi_Contents/Datas')      
-        knn.load_model("black_light_white_light")
+        knn.load_model("demo_BW_light")
         camera.start_camera()
  
         while True:
             if input("Press Enter to read a card, or type q first to exit. ") == "q":
                 break
             image = camera.capture()
-            predict = knn.predict(image)
+            predict = knn.predict(image, 'v')
             print(predict)
 
             if predict == "white":

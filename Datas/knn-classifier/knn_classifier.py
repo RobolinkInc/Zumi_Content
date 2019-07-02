@@ -76,24 +76,30 @@ class ColorClassifier():
                 except ValueError:
                     print("Oops! Input was not an integer.")
                 else:
+                    if self.label_num <= 1:
+                        print("Number supposed to be more than 1.")
+                        continue
                     break
 
             for i in range(self.label_num):
-                label = input("Label name (" + str(i + 1) + "/" + str(self.label_num) + ") : ")
-                while self.is_in_labels(label, False):
-                    print("There is same label, try again with other one.")
+                while True:
                     label = input("Label name (" + str(i + 1) + "/" + str(self.label_num) + ") : ")
-                self.label_names.append(label)
+                    while self.is_in_labels(label, False):
+                        print("There is same label, try again with other one.")
+                        label = input("Label name (" + str(i + 1) + "/" + str(self.label_num) + ") : ")
 
-                key = 'n'
-                while key == 'n':
-                    key = input(
-                        "Keyboard command for label (" + str(i + 1) + "/" + str(self.label_num) + ") : ")
-                    if self.is_in_labels(key, False):
-                        key = 'n'
-                        print("There is same keyboard command, try again with other one.")
-                self.label_keys.append(key)
-
+                    key = 'n'
+                    while key == 'n':
+                        key = input(
+                            "Keyboard command for label (" + str(i + 1) + "/" + str(self.label_num) + ") : ")
+                        if self.is_in_labels(key, False):
+                            key = 'n'
+                            print("There is same keyboard command, try again with other one.")
+                    if input(label + " and, " + key + ". Confirm for Enter or not for n")!="n" :
+                        self.label_names.append(label)
+                        self.label_keys.append(key)
+                        break
+                        
             return True
 
     def set_values_from_data(self):
@@ -125,9 +131,11 @@ class ColorClassifier():
                     self.labels.append(current_label)
                     self.features.append(feature)
 
-    def check_enough_datas(self, balance=""):
+    def check_enough_datas(self, balance="", min_num=50):
         if balance == "":
             balance = self.is_balanced_data
+        
+        self.is_balanced_data = balance
 
         prev_num=0
         print('\nYou took .......')
@@ -141,10 +149,10 @@ class ColorClassifier():
             return False
 
         for num in self.data_cnt.values():
-            if balance and (num > prev_num+self.collect_num or num < prev_num - self.collect_num):
+            if balance and (num >= prev_num+self.collect_num or num <= prev_num - self.collect_num):
                 print('You should took same amount of the each labels. Try again')
                 return False
-            if num < 50:
+            if num < min_num:
                 print('There is not enough data. Try again')
                 return False
 
@@ -372,7 +380,6 @@ class ColorClassifier():
                     elif temp < 0:
                         temp = 0
                     feature.append(temp)
-
                 features.append(feature)
             divided_features.append(features)
             divided_labels.append(labels)
