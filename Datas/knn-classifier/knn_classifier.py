@@ -1,4 +1,4 @@
-from random import uniform
+from random import uniform, shuffle
 import numpy as np
 import cv2
 import os
@@ -10,12 +10,67 @@ from sklearn.neighbors import KNeighborsClassifier
 absPATH = '/home/pi/Zumi_Contents/Datas'
 DEMO = 'knn-classifier'
 
+class KNeighbors():
+    def __init__(self, n_neighbors=5):
+        self.n_neighbors = n_neighbors
+        self.X=None
+        self.y=None
+        self.y_list=None
+        self.dimension=1
+
+    def fit(self, X, y):
+        if not isinstance(X, list) or not isinstance(y, list):
+            raise ValueError('Type have to be list')
+        self.X, self.y = shuffle(X, y, random_state=0)
+        self.y_list=list(set(y))
+        self.dimension = len(self.X[0])
+
+    def predict(self, X):
+        pred_results = []
+        for target_x in X:
+            predict=''
+            dists=[]
+            neighbors=[]
+            labels = list(self.y)
+
+            for i in range(len(self.X)):
+                dist = 0
+                for j in range(self.dimension):
+                    dist += (self.X[i][j] - target_x[j])**2
+                dists.append(dist)
+
+            for i in range(self.n_neighbors):
+                neighbors.append(self.get_min(dists, labels))
+
+            last_min_x = neighbors[self.n_neighbors-1][0]
+            while last_min_x == min(dists):
+                neighbors.append(self.get_min(dists, labels))
+
+            neighbor_labels = [i[1] for i in neighbors]
+            max_cnt=0
+            for label in self.y_list:
+                cnt = neighbor_labels.count(label)
+                if max_cnt < cnt :
+                    max_cnt = cnt
+                    predict = label
+
+            pred_results.append(predict)
+        return pred_results
+
+    def get_min(self, dists, labels):
+        min_x = min(dists)
+        min_index = dists.index(min_x)
+        result = list([min_x, labels[min_index]])
+        dists.remove(min_x)
+        del labels[min_index]
+        return result
 
 class ColorClassifier():
     upper_hsv = [220, 255, 255]
 
     def __init__(self, demo_name="", is_balanced_data=True, path=absPATH):
         self.knn = KNeighborsClassifier()
+        self.knn2 = KNeighbors()
         self.demo_name = demo_name
         self.label_names = []
         self.feature_names = ['h', 's', 'v']
@@ -41,6 +96,69 @@ class ColorClassifier():
 
         if demo_name !="":
             self.load_model(demo_name)
+
+    def predict(self, pred_features, values='hsv'):
+        features = self.__select_hsv_value(values, self.features)
+        if not isinstance(pred_features, list):
+            hsv_list = self.get_hsv_data(pred_features)
+            pred_features = []
+            if values.find('h') != -1:
+                pred_features.append(hsv_list[0])
+            if values.find('s') != -1:
+                pred_features.append(hsv_list[1])
+            if values.find('v') != -1:
+                pred_features.append(hsv_list[2])
+
+        pred_list = list([pred_features])
+
+        self.knn.fit(features, self.labels)
+        self.predicts = self.knn.predict(pred_list)
+
+        self.knn2.fit(features, self.labels)
+        predicts2 = self.knn2.predict(pred_list)
+        print("origin : ", self.predicts)
+        print("lynn : ", predicts2)
+        return self.predicts
+
+    def get_accuracy(self):
+        x, y = shuffle(self.features, self.labels, random_state=0)
+
+        cut = int(len(x) / 10)
+        if cut == 0:
+            print("There is not enough data. Please add more.")
+            return
+
+        x_train = x[:-cut]
+        y_train = y[:-cut]
+        x_test = x[-cut:]
+        y_test = y[-cut:]
+
+        self.knn.fit(x_train, y_train)
+        self.knn2.fit(x_train, y_train)
+
+        pred = self.knn.predict(x_test)
+        pred2 = self.knn2.predict(x_test)
+
+        print("origin:", pred)
+        print("lynn:", pred2)
+        print("answer:",y_test)
+
+        n = 0
+        n2 = 0
+        for i in range(len(pred)):
+            if pred[i] == y_test[i]:
+                n += 1
+            if pred2[i] == y_test[i]:
+                n2 += 1
+
+        accuracy = (n / len(y_test)) * 100
+        accuracy2 = (n2 / len(y_test)) * 100
+
+        print("Accuracy origin: " + str(accuracy))
+        print("Accuracy lynn : " + str(accuracy2))
+
+        return accuracy
+
 
     def load_model(self, name):
         self.demo_name = name
@@ -158,6 +276,19 @@ class ColorClassifier():
 
         return True
 
+    def add_out_boundary_datas(self):
+        for i in range (len(self.features)):
+            feature = self.features[i]
+            label = self.labels[i]
+            if feature[0] < 40:
+                temp = [180 + feature[0], feature[1], feature[2]]
+                self.labels.append(label)
+                self.features.append(temp)
+            elif feature[0] > 180:
+                temp = [0 + feature[0], feature[1], feature[2]]
+                self.labels.append(label)
+                self.features.append(temp)
+
     def add_data(self, label, feature):
         self.current_image = []
 
@@ -176,19 +307,6 @@ class ColorClassifier():
             self.data_cnt[label] += 1
         else:
             self.data_cnt[label] = 1
-
-    def add_out_boundary_datas(self):
-        for i in range (len(self.features)):
-            feature = self.features[i]
-            label = self.labels[i]
-            if feature[0] < 40:
-                temp = [180 + feature[0], feature[1], feature[2]]
-                self.labels.append(label)
-                self.features.append(temp)
-            elif feature[0] > 180:
-                temp = [0 + feature[0], feature[1], feature[2]]
-                self.labels.append(label)
-                self.features.append(temp)
 
     def add_datas(self, camera, cnt=10, save_image=False):
         self.collect_num = cnt
@@ -285,53 +403,6 @@ class ColorClassifier():
         self.current_image = rgb
 
         return self.current_feature_value
-
-    def get_accuracy(self):
-        x, y = shuffle(self.features, self.labels, random_state=0)
-
-        cut = int(len(x) / 10)
-        if cut == 0:
-            print("There is not enough data. Please add more.")
-            return
-
-        x_train = x[:-cut]
-        y_train = y[:-cut]
-        x_test = x[-cut:]
-        y_test = y[-cut:]
-
-        self.knn.fit(x_train, y_train)
-
-        print(self.knn.predict(x_test))
-        print(y_test)
-
-        n = 0
-        for i in range(0, len(self.knn.predict(x_test))):
-            if self.knn.predict(x_test)[i] == y_test[i]:
-                n += 1
-        accuracy = (n / len(y_test)) * 100
-
-        print("Accuracy : " + str(accuracy))
-
-        return accuracy
-
-    def predict(self, pred_features, values='hsv'):
-        features = self.__select_hsv_value(values, self.features)
-        if not isinstance(pred_features, list):
-            hsv_list = self.get_hsv_data(pred_features)
-            pred_features = []
-            if values.find('h') != -1:
-                pred_features.append(hsv_list[0])
-            if values.find('s') != -1:
-                pred_features.append(hsv_list[1])
-            if values.find('v') != -1:
-                pred_features.append(hsv_list[2])
-
-        pred_list = []
-        pred_list.append(pred_features)
-
-        self.knn.fit(features, self.labels)
-        self.predicts = self.knn.predict(pred_list)
-        return self.predicts
 
     def divide_data(self):
         self.labels, self.features = zip(*sorted(zip(self.labels, self.features)))
