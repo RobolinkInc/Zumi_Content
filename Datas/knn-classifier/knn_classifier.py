@@ -14,8 +14,6 @@ class KNeighborsClassifier():
         self.X, self.y = shuffle(X, y, random_state=0)
         self.y_list=list(set(y))
         self.dimension = len(self.X[0])
-        print(self.X)
-        print(self.y)
 
     def predict(self, X):
         pred_results = []
@@ -47,6 +45,8 @@ class KNeighborsClassifier():
                     predict = label
 
             pred_results.append(predict)
+        if len(pred_results)==1 :
+            return pred_results[0]
         return pred_results
 
     def __get_min(self, dists, labels):
