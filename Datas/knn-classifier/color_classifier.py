@@ -4,7 +4,7 @@ import os
 import time
 from random import uniform
 from sklearn.utils import shuffle
-from knn_classifer import KNeighborsClassifier
+from knn_classifier import KNeighborsClassifier
 
 absPATH = '/home/pi/Zumi_Contents/Datas'
 DEMO = 'knn-classifier'
