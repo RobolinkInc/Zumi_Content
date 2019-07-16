@@ -6,7 +6,7 @@ from random import uniform
 from sklearn.utils import shuffle
 from knn_classifier import KNeighborsClassifier
 
-absPATH = '/home/pi/Zumi_Contents/Datas'
+absPATH = '/home/pi/Zumi_Content/Data'
 DEMO = 'knn-classifier'
 
 class ColorClassifier():

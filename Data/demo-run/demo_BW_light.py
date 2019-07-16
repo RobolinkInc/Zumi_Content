@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0,'/home/pi/Zumi_Contents/Datas/knn-classifier')
+sys.path.insert(0,'/home/pi/Zumi_Content/Data/knn-classifier')
 from zumi.zumi import Zumi
 from zumi.util.camera import Camera
 from color_classifier import ColorClassifier
@@ -23,7 +23,7 @@ def run():
 
     try:
         camera = Camera()
-        knn = ColorClassifier(path='/home/pi/Zumi_Contents/Datas')      
+        knn = ColorClassifier(path='/home/pi/Zumi_Content/Data')      
         knn.load_model("demo_BW_light")
         camera.start_camera()
  

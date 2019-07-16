@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0,'/home/pi/Zumi_Contents/Datas/face-recognition')
+sys.path.insert(0,'/home/pi/Zumi_Content/Data/face-recognition')
 from recognition import Recognition
 from zumi.util.camera import Camera
 from zumi.util.screen import Screen
@@ -47,7 +47,7 @@ def collectPictures():
 def runModel():
     camera.start_camera()
     print("loading...")
-    fd.recognizer.read('../Datas/face-recognition/trainer/trainer.yml')
+    fd.recognizer.read('../face-recognition/trainer/trainer.yml')
     print("start")
 
     currentTime = time.time()
@@ -75,7 +75,7 @@ def deleteOneDataset():
 
     labels = 0    
     try:
-        with open('../Datas/face-recognition/labels.pickle', 'rb') as labelFile:
+        with open('../face-recognition/labels.pickle', 'rb') as labelFile:
             labels = pickle.load(labelFile)
         names = list(labels.values())
         print(names)
