@@ -26,6 +26,7 @@ def collectPictures():
             image = camera.capture()
             fd.makeDataset(image)
             IPython.display.display(PIL.Image.fromarray(image))
+            print("Progress : " + str(fd.cap) + "/50")
             screen.draw_image(PIL.Image.fromarray(fd.streaming_image).convert('1'))
             IPython.display.clear_output(wait=True)
 
