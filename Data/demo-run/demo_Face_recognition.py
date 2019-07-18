@@ -47,7 +47,7 @@ def collectPictures():
 def runModel():
     camera.start_camera()
     print("loading...")
-    fd.recognizer.read('../face-recognition/trainer/trainer.yml')
+    fd.recognizer.read('../Data/face-recognition/trainer/trainer.yml')
     print("start")
 
     currentTime = time.time()
@@ -75,7 +75,7 @@ def deleteOneDataset():
 
     labels = 0    
     try:
-        with open('../face-recognition/labels.pickle', 'rb') as labelFile:
+        with open('../Data/face-recognition/labels.pickle', 'rb') as labelFile:
             labels = pickle.load(labelFile)
         names = list(labels.values())
         print(names)
